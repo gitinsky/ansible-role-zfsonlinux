@@ -1,0 +1,108 @@
+---
+- name: install development RPMs
+  yum: name={{ item }} state=present
+  with_items:
+    - kernel-devel
+    - zlib-devel
+    - libuuid-devel
+    - libblkid-devel
+    - libselinux-devel
+    - parted
+    - lsscsi
+    - wget
+    - git
+    - make
+    - autoconf
+    - automake
+    - gcc
+    - libtool
+    - patch
+    - patchutils
+    - rpm-build
+
+- name: install kernel sources
+  yum: name=kernel-devel state=present
+
+- name: get SPL
+  git: repo=https://github.com/zfsonlinux/spl.git dest=/root/spl accept_hostkey=yes
+
+- name: configure SPL
+  command: bash -c "cd /root/spl && ./autogen.sh && ./configure --with-config=user" creates=/root/spl/configure
+
+- name: make SPL
+  command: bash -c "cd /root/spl && make rpms"
+
+- name: install DKMS
+  yum: name=dkms state=present
+
+- name: check if SPL is installed
+  command: bash -c "rpm -qa | grep spl"
+  ignore_errors: True
+  register: result
+
+- name: install SPL
+  command: bash -c "rpm -Uhv /root/spl/*.rpm"
+  when: result|failed
+
+- name: get ZFS
+  git: repo=https://github.com/zfsonlinux/zfs.git dest=/root/zfs accept_hostkey=yes
+
+- name: configure ZFS
+  command: bash -c "cd /root/zfs && ./autogen.sh && ./configure --with-config=user" creates=/root/zfs/configure
+
+- name: make ZFS
+  command: bash -c "cd /root/zfs && make rpms"
+
+- name: check if libuutil1 is installed
+  command: bash -c "rpm -qa | grep libuutil1"
+  ignore_errors: True
+  register: result
+
+- name: install libuutil1
+  command: bash -c "rpm -Uhv /root/zfs/libuutil1*.rpm"
+  when: result|failed
+
+- name: check if libnvpair1 is installed
+  command: bash -c "rpm -qa | grep libnvpair1"
+  ignore_errors: True
+  register: result
+
+- name: install libnvpair1
+  command: bash -c "rpm -Uhv /root/zfs/libnvpair1*.rpm"
+  when: result|failed
+
+- name: check if libzpool2 is installed
+  command: bash -c "rpm -qa | grep libzpool2"
+  ignore_errors: True
+  register: result
+
+- name: install libzpool2
+  command: bash -c "rpm -Uhv /root/zfs/libzpool2*.rpm"
+  when: result|failed
+
+- name: check if libzfs2 is installed
+  command: bash -c "rpm -qa | grep libzfs2"
+  ignore_errors: True
+  register: result
+
+- name: install libzfs2
+  command: bash -c "rpm -Uhv /root/zfs/libzfs2*.rpm"
+  when: result|failed
+
+- name: check if zfs-dkms is installed
+  command: bash -c "rpm -qa | grep zfs-dkms"
+  ignore_errors: True
+  register: result
+
+- name: install zfs-dkms
+  command: bash -c "rpm -Uhv /root/zfs/zfs-dkms*noarch.rpm"
+  when: result|failed
+
+- name: check if zfs is installed
+  command: bash -c "rpm -qa | grep zfs-0"
+  ignore_errors: True
+  register: result
+
+- name: install zfs
+  command: bash -c "rpm -Uhv /root/zfs/zfs-0*x86_64.rpm"
+  when: result|failed
