@@ -32,6 +32,9 @@
 - name: make SPL
   command: bash -c "cd /root/spl && make rpms"
 
+#- name: remove unneeded modules
+#  command: bash -c "rm -rf /root/spl/kmod-spl-*.rpm"
+
 - name: install DKMS
   yum: name=dkms state=present
 
@@ -47,16 +50,18 @@
 - name: get ZFS
   git: repo=https://github.com/zfsonlinux/zfs.git dest=/root/zfs accept_hostkey=yes
 
-- name: configure ZFS
-  command: bash -c "cd /root/zfs && ./autogen.sh && ./configure --with-config=user" creates=/root/zfs/configure
-
-- name: make ZFS
-  command: bash -c "cd /root/zfs && make rpms"
-
 - name: check if libuutil1 is installed
   command: bash -c "rpm -qa | grep libuutil1"
   ignore_errors: True
   register: result
+
+- name: configure ZFS
+  command: bash -c "cd /root/zfs && ./autogen.sh && ./configure --with-config=user" creates=/root/zfs/configure
+  when: result|failed
+
+- name: make ZFS
+  command: bash -c "cd /root/zfs && make rpms"
+  when: result|failed
 
 - name: install libuutil1
   command: bash -c "rpm -Uhv /root/zfs/libuutil1*.rpm"
