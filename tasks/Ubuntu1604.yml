@@ -1,3 +1,6 @@
 ---
 - name: install zfs
   apt: name=zfs state=present
+
+- name: put /etc/modprobe.d/zfs.conf
+  template: src=zfs.conf dest=/etc/modprobe.d/zfs.conf
